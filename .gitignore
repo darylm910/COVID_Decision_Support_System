@@ -1,0 +1,40 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Environment variables
+.env
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+
+# Large model artifacts (optional)
+# Uncomment if you don't want to version trained models
+# models/*.joblib
+
+# Large datasets (optional)
+# data/raw/*
