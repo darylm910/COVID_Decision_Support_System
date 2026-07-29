@@ -350,7 +350,60 @@ def prepare_prediction_input(
 
     return scaled_df
   
+def prepare_dataset_for_model(
+    input_df,
+    scaler,
+    feature_names,
+):
+    """
+    Prepare multiple observations for model prediction or SHAP analysis
+    using the same preprocessing steps used during model training.
 
+    Parameters
+    ----------
+    input_df : pandas.DataFrame
+        DataFrame containing the numeric prediction features and a
+        'continent' column.
+    scaler : sklearn.preprocessing.StandardScaler
+        Trained scaler used during model development.
+    feature_names : list[str]
+        Ordered feature names expected by the trained model.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Model-ready feature matrix.
+    """
+
+    input_df = input_df.copy()
+
+    # Add continent dummy variables
+    for feature in feature_names:
+        if feature.startswith("continent_"):
+            continent_name = feature.replace("continent_", "")
+
+            input_df[feature] = (
+                input_df["continent"] == continent_name
+            ).astype(float)
+
+    # Scale only the numeric prediction features
+    scaled_numeric = scaler.transform(
+        input_df[PREDICTION_FEATURES]
+    )
+
+    scaled_df = pd.DataFrame(
+        scaled_numeric,
+        columns=PREDICTION_FEATURES,
+        index=input_df.index,
+    )
+
+    # Add continent dummy variables back
+    for feature in feature_names:
+        if feature.startswith("continent_"):
+            scaled_df[feature] = input_df[feature]
+
+    # Ensure final column order matches model training
+    return scaled_df[feature_names]
 
 # ---------------------------------------
 # Filter Utility Function
