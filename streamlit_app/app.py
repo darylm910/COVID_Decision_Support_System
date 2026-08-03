@@ -8,7 +8,7 @@ import plotly.express as px
 import pandas as pd
 import matplotlib.pyplot as plt
 import shap
-
+from pathlib import Path
 
 from dashboard_utils import (
     FIGURE_DIR,
@@ -43,6 +43,13 @@ from shap_utils import (
 )
 
 # ---------------------------------------
+# Paths
+# ---------------------------------------
+
+APP_DIR = Path(__file__).resolve().parent
+STYLE_PATH = APP_DIR / "assets" / "style.css"
+
+# ---------------------------------------
 # Page Configuration
 # ---------------------------------------
 
@@ -55,6 +62,15 @@ st.set_page_config(
 SHAP_DISPLAY_THRESHOLD = 10.0
 SHAP_SUMMARY_THRESHOLD = 2.0
 
+# ---------------------------------------
+# Load Custom CSS
+# ---------------------------------------
+
+with STYLE_PATH.open(encoding="utf-8") as css:
+    st.markdown(
+        f"<style>{css.read()}</style>",
+        unsafe_allow_html=True,
+    )
 # ---------------------------------------
 # Load Data
 # ---------------------------------------
@@ -116,7 +132,8 @@ model_comparison = load_model_comparison()
 # Sidebar Controls
 # ---------------------------------------
 
-st.sidebar.title("Controls")
+#st.sidebar.title("Dashboard Controls")
+st.sidebar.markdown("## ⚙️ Dashboard Controls")
 
 # Select the country displayed in the Country Explorer and Prediction tabs
 country = st.sidebar.selectbox(
@@ -157,39 +174,22 @@ st.title("🌍 Explainable AI for Global COVID-19 Mortality")
 
 st.markdown(
     """
-    This interactive dashboard combines machine learning, explainable AI,
-    and data visualization to explore the factors associated with
-    COVID-19 mortality across 239 countries.
+Explore how demographic, healthcare, economic, vaccination, and public health factors influence **COVID-19 mortality across 239 countries** using machine learning, country clustering, and explainable AI.
 
-    The application integrates three complementary analytical approaches:
+### This application allows you to:
 
-    - **Country Clustering** identifies groups of countries with similar
-      demographic, healthcare, economic, vaccination, and policy
-      characteristics. COVID-19 outcome variables were intentionally
-      excluded from the clustering process so that differences in cases
-      and mortality could be examined across the resulting groups.
-
-    - **Random Forest Prediction** estimates COVID-19 deaths per million
-      using demographic, healthcare, economic, vaccination, policy, and
-      pandemic-related variables.
-
-    - **Explainable AI (SHAP)** reveals how individual features influence
-      both overall model behavior and predictions for individual countries,
-      providing transparent insight into the model's decision-making.
-
-    Use the tabs below to:
-
-    - Explore country profiles and global trends
-    - Visualize mortality and other key indicators on an interactive map
-    - Compare countries through data-driven clustering
-    - Examine the model's most influential predictors
-    - Understand how features affect predictions using SHAP
-    - Experiment with interactive what-if scenarios
-    - Browse the complete analysis dataset
-    """
+- **Explore** country profiles and global trends
+- **Visualize** countries on an interactive world map
+- **Compare** countries using K-Means clustering
+- **Understand** model behavior with SHAP explainability
+- **Predict** mortality under user-defined scenarios
+- **Evaluate** Random Forest model performance
+- **Browse** the complete analysis dataset
+"""
 )
 
 st.divider()
+
 
 # ---------------------------------------
 # Tabs
@@ -230,14 +230,16 @@ with country_tab:
         "selected country."
     )
 
-    # Show continent as metadata instead of mixing text into numeric tables
-    #st.caption(f"Continent: {selected['continent']}")
+    # Show continent and cluster
     st.code(
-      f"""Continent: {selected['continent']}
+        f"""Continent: {selected['continent']}
 Country Cluster: {get_cluster_display(selected['Cluster'])}"""
     )
 
+    # ---------------------------------------
     # Key summary metrics
+    # ---------------------------------------
+
     col1, col2, col3 = st.columns(3)
 
     col1.metric(
@@ -266,63 +268,91 @@ Country Cluster: {get_cluster_display(selected['Cluster'])}"""
 
     st.divider()
 
-    # Demographic and healthcare variables
-    st.subheader("Demographics and Healthcare")
+    # ---------------------------------------
+    # Country Detail Tables
+    # ---------------------------------------
 
-    demographic_features = [
-        "median_age",
-        "life_expectancy",
-        "gdp_per_capita",
-        "hospital_beds_per_thousand",
-    ]
+    left_col, right_col = st.columns(2)
 
-    demographic_df = pd.DataFrame(
-        {
-            "Value": [
-                format_feature_value(feature, selected[feature])
-                for feature in demographic_features
-            ]
-        },
-        index=[
-            FEATURE_LABELS[feature]
-            for feature in demographic_features
-        ],
-    )
+    with left_col:
 
-    st.dataframe(
-        demographic_df,
-        width="stretch",
-    )
+        st.subheader("Demographics and Healthcare")
 
-    # COVID-specific variables
-    st.subheader("COVID-19 Metrics")
+        demographics_table = pd.DataFrame(
+            {
+                "Metric": [
+                    "Median Age",
+                    "Life Expectancy (Years)",
+                    "GDP per Capita (USD)",
+                    "Hospital Beds per 1,000",
+                ],
+                "Value": [
+                    format_feature_value(
+                        "median_age",
+                        selected["median_age"],
+                    ),
+                    format_feature_value(
+                        "life_expectancy",
+                        selected["life_expectancy"],
+                    ),
+                    format_feature_value(
+                        "gdp_per_capita",
+                        selected["gdp_per_capita"],
+                    ),
+                    format_feature_value(
+                        "hospital_beds_per_thousand",
+                        selected["hospital_beds_per_thousand"],
+                    ),
+                ],
+            }
+        )
 
-    covid_features = [
-        "total_cases_per_million",
-        "total_deaths_per_million",
-        "people_fully_vaccinated_per_hundred",
-        "stringency_index",
-    ]
+        st.dataframe(
+            demographics_table,
+            hide_index=True,
+            width="stretch",
+        )
 
-    covid_df = pd.DataFrame(
-        {
-            "Value": [
-                format_feature_value(feature, selected[feature])
-                for feature in covid_features
-            ]
-        },
-        index=[
-            FEATURE_LABELS[feature]
-            for feature in covid_features
-        ],
-    )
+    with right_col:
 
-    st.dataframe(
-        covid_df,
-        width="stretch",
-    )
+        st.subheader("COVID-19 Metrics")
 
+        covid_table = pd.DataFrame(
+            {
+                "Metric": [
+                    "Cases per Million",
+                    "Deaths per Million",
+                    "Fully Vaccinated (%)",
+                    "Government Stringency Index",
+                ],
+                "Value": [
+                    format_feature_value(
+                        "total_cases_per_million",
+                        selected["total_cases_per_million"],
+                    ),
+                    format_feature_value(
+                        "total_deaths_per_million",
+                        selected["total_deaths_per_million"],
+                    ),
+                    format_feature_value(
+                        "people_fully_vaccinated_per_hundred",
+                        selected["people_fully_vaccinated_per_hundred"],
+                    ),
+                    format_feature_value(
+                        "stringency_index",
+                        selected["stringency_index"],
+                    ),
+                ],
+            }
+        )
 
+        st.dataframe(
+            covid_table,
+            hide_index=True,
+            width="stretch",
+        )
+        
+        
 # ---------------------------------------
 # Global Map Tab
 # ---------------------------------------
@@ -926,35 +956,86 @@ with prediction_tab:
         "model's prediction changes."
     )
 
-    # Retrieve the selected country's data
+    # ---------------------------------------
+    # Selected country and baseline values
+    # ---------------------------------------
+
     country_profile = get_country_profile(df, country)
 
-    st.caption(
-        f"Selected Country: {country} | "
-        f"Continent: {country_profile['continent']}"
-    )
+    st.subheader(f"Country: {country}")
+    st.write(f"**Continent:** {country_profile['continent']}")
 
-    # Store the original model inputs for comparison and reset
-    original_input_values = {
-        feature: float(country_profile[feature])
-        for feature in PREDICTION_FEATURES
-    }
+    original_input_values = {}
+    imputed_features = []
 
-    input_values = {}
+    for feature in PREDICTION_FEATURES:
+        value = country_profile[feature]
+
+        # Replace missing country values with the dataset median.
+        if pd.isna(value):
+            value = df[feature].median(skipna=True)
+            imputed_features.append(feature)
+
+        if pd.isna(value):
+            raise ValueError(
+                f"No usable value is available for '{feature}'. "
+                "The country value and dataset median are both missing."
+            )
+
+        original_input_values[feature] = float(value)
+
+    # ---------------------------------------
+    # Reset inputs when country changes
+    # ---------------------------------------
+
+    previous_country = st.session_state.get("prediction_country")
+    
+    if previous_country != country:
+      st.session_state.prediction_country = country
+      
+      for feature in PREDICTION_FEATURES:
+        st.session_state[f"prediction_{feature}"] = (
+            original_input_values[feature]
+        )
+    else:
+      for feature in PREDICTION_FEATURES:
+        st.session_state.setdefault(
+            f"prediction_{feature}",
+            original_input_values[feature],
+        )
+
+    if imputed_features:
+        imputed_labels = [
+            FEATURE_LABELS.get(feature, feature)
+            for feature in imputed_features
+        ]
+
+        st.caption(
+            "Missing values replaced with dataset medians: "
+            + ", ".join(imputed_labels)
+        )
+
+    # ---------------------------------------
+    # Model inputs
+    # ---------------------------------------
 
     st.subheader("Model Inputs")
 
-    # Restore all inputs to the selected country's original values
-    if st.button("Restore Original Values"):
+    if st.button(
+        "Restore Original Values",
+        key="restore_prediction_values",
+    ):
         for feature in PREDICTION_FEATURES:
             st.session_state[f"prediction_{feature}"] = (
                 original_input_values[feature]
             )
+
         st.rerun()
+
+    input_values = {}
 
     col1, col2 = st.columns(2)
 
-    # Collect demographic and healthcare inputs
     with col1:
         for feature in [
             "median_age",
@@ -965,16 +1046,14 @@ with prediction_tab:
             min_value, max_value = FEATURE_LIMITS[feature]
 
             input_values[feature] = st.number_input(
-                FEATURE_LABELS[feature],
-                min_value=min_value,
-                max_value=max_value,
-                value=original_input_values[feature],
-                step=FEATURE_STEPS[feature],
-                format=FEATURE_FORMATS[feature],
-                key=f"prediction_{feature}",
+              FEATURE_LABELS[feature],
+              min_value=min_value,
+              max_value=max_value,
+              step=FEATURE_STEPS[feature],
+              format=FEATURE_FORMATS[feature],
+              key=f"prediction_{feature}",
             )
 
-    # Collect COVID-19 related inputs
     with col2:
         for feature in [
             "total_cases_per_million",
@@ -987,14 +1066,28 @@ with prediction_tab:
                 FEATURE_LABELS[feature],
                 min_value=min_value,
                 max_value=max_value,
-                value=original_input_values[feature],
                 step=FEATURE_STEPS[feature],
                 format=FEATURE_FORMATS[feature],
                 key=f"prediction_{feature}",
             )
 
-    # Generate baseline and modified model predictions
-    actual_value = float(country_profile["total_deaths_per_million"])
+    # Compare values safely, avoiding floating-point comparison issues.
+    def input_has_changed(feature):
+        return not np.isclose(
+            float(input_values[feature]),
+            float(original_input_values[feature]),
+            rtol=0.0,
+            atol=1e-9,
+            equal_nan=True,
+        )
+
+    # ---------------------------------------
+    # Generate predictions
+    # ---------------------------------------
+
+    actual_value = float(
+        country_profile["total_deaths_per_million"]
+    )
 
     original_prediction_input = prepare_prediction_input(
         input_values=original_input_values,
@@ -1003,7 +1096,9 @@ with prediction_tab:
         feature_names=feature_names,
     )
 
-    original_prediction = model.predict(original_prediction_input)[0]
+    original_prediction = float(
+        model.predict(original_prediction_input)[0]
+    )
 
     prediction_input = prepare_prediction_input(
         input_values=input_values,
@@ -1012,19 +1107,24 @@ with prediction_tab:
         feature_names=feature_names,
     )
 
-    modified_prediction = model.predict(prediction_input)[0]
+    modified_prediction = float(
+        model.predict(prediction_input)[0]
+    )
 
-    # Compute local SHAP explanations for both scenarios
+    # ---------------------------------------
+    # Compute local SHAP explanations
+    # ---------------------------------------
+
     original_local_shap_values = compute_local_shap_values(
-      explainer,
-      original_prediction_input,
-    )
-    local_shap_values = compute_local_shap_values(
-      explainer,
-      prediction_input,
+        explainer,
+        original_prediction_input,
     )
 
-    # Build display values using the original (unscaled) inputs
+    local_shap_values = compute_local_shap_values(
+        explainer,
+        prediction_input,
+    )
+
     display_values = []
 
     for feature in feature_names:
@@ -1035,20 +1135,21 @@ with prediction_tab:
                 prediction_input.iloc[0][feature]
             )
 
-    # Create friendly feature labels
     feature_labels = [
         FEATURE_LABELS.get(feature, feature)
         for feature in feature_names
     ]
 
-    # Copy SHAP values for the original and modified scenarios
     original_shap_values = (
-      original_local_shap_values.values[0].copy()
+        original_local_shap_values.values[0].copy()
     )
-    
+
     shap_values = local_shap_values.values[0].copy()
 
-    # Combine one-hot continent variables into a single feature
+    # ---------------------------------------
+    # Combine one-hot continent variables
+    # ---------------------------------------
+
     continent_features = [
         "continent_Asia",
         "continent_Europe",
@@ -1057,65 +1158,89 @@ with prediction_tab:
         "continent_South America",
     ]
 
+    available_continent_features = [
+        feature
+        for feature in continent_features
+        if feature in feature_names
+    ]
+
     continent_indices = [
         feature_names.index(feature)
-        for feature in continent_features
+        for feature in available_continent_features
     ]
 
     original_continent_effect = (
-      original_shap_values[continent_indices].sum()
+        original_shap_values[continent_indices].sum()
+        if continent_indices
+        else 0.0
     )
-    continent_effect = shap_values[continent_indices].sum()    
+
+    continent_effect = (
+        shap_values[continent_indices].sum()
+        if continent_indices
+        else 0.0
+    )
 
     keep_indices = [
-        i
-        for i in range(len(feature_names))
-        if i not in continent_indices
+        index
+        for index in range(len(feature_names))
+        if index not in continent_indices
     ]
 
-    original_shap_values = original_shap_values[keep_indices]
-    shap_values = shap_values[keep_indices]    
+    original_shap_values = original_shap_values[
+        keep_indices
+    ]
+
+    shap_values = shap_values[keep_indices]
+
     feature_labels = [
-        feature_labels[i]
-        for i in keep_indices
+        feature_labels[index]
+        for index in keep_indices
     ]
+
     display_values = [
-        display_values[i]
-        for i in keep_indices
+        display_values[index]
+        for index in keep_indices
     ]
 
-    # Append the combined continent feature
-    shap_values = np.append(
-        shap_values,
-        continent_effect,
-    )
-    original_shap_values = np.append(
-      original_shap_values,
-      original_continent_effect,
-    )
-    
+    if continent_indices:
+        original_shap_values = np.append(
+            original_shap_values,
+            original_continent_effect,
+        )
 
-    feature_labels.append("Continent")
-    display_values.append(country_profile["continent"])
+        shap_values = np.append(
+            shap_values,
+            continent_effect,
+        )
 
-    # Create a display version with friendly labels
+        feature_labels.append("Continent")
+        display_values.append(
+            country_profile["continent"]
+        )
+
     local_shap_display = shap.Explanation(
         values=shap_values,
         base_values=local_shap_values.base_values[0],
         data=display_values,
         feature_names=feature_labels,
     )
-  
 
-    # Determine whether any model inputs have changed
+    # ---------------------------------------
+    # Determine whether inputs changed
+    # ---------------------------------------
+
     inputs_modified = any(
-        input_values[feature] != original_input_values[feature]
+        input_has_changed(feature)
         for feature in PREDICTION_FEATURES
     )
 
+    # ---------------------------------------
+    # Model results
+    # ---------------------------------------
+
     st.subheader("Model Results")
 
-    # Compare the baseline and modified predictions when inputs change
     if inputs_modified:
         result_col1, result_col2, result_col3 = st.columns(3)
 
@@ -1127,99 +1252,108 @@ with prediction_tab:
         result_col2.metric(
             "Original Prediction",
             f"{original_prediction:,.1f}",
-            delta=f"{original_prediction - actual_value:,.1f}",
+            delta=(
+                f"{original_prediction - actual_value:,.1f}"
+            ),
+        )
+
+        prediction_change = (
+            modified_prediction - original_prediction
         )
 
         result_col3.metric(
             "Modified Prediction",
             f"{modified_prediction:,.1f}",
-            delta=f"{modified_prediction - original_prediction:,.1f}",
+            delta=f"{prediction_change:,.1f}",
         )
 
-        prediction_change = modified_prediction - original_prediction
         percent_change = (
             prediction_change / original_prediction * 100
             if original_prediction != 0
-            else 0
+            else 0.0
         )
 
-        # Summarize the estimated effect of the user's changes
         st.info(
             f"Estimated effect of your changes: "
             f"{prediction_change:+,.1f} deaths per million "
             f"({percent_change:+.1f}%)."
         )
 
-        # Display the inputs that were modified
+        # ---------------------------------------
+        # Changed inputs
+        # ---------------------------------------
+
         changed_inputs = []
 
         for feature in PREDICTION_FEATURES:
+            if not input_has_changed(feature):
+                continue
+
             original_value = original_input_values[feature]
             modified_value = input_values[feature]
+            change = modified_value - original_value
 
-            if modified_value != original_value:
-                change = modified_value - original_value
+            changed_inputs.append(
+                {
+                    "Input": FEATURE_LABELS[feature],
+                    "Original": format_feature_value(
+                        feature,
+                        original_value,
+                    ),
+                    "Modified": (
+                        f"{format_feature_value(feature, modified_value)} "
+                        f"({change:+,.1f})"
+                    ),
+                }
+            )
 
-                changed_inputs.append({
-                  "Input": FEATURE_LABELS[feature],
-                  "Original": format_feature_value(
-                    feature,
-                    original_value,
-                ),
-                "Modified": (
-                  f"{format_feature_value(feature, modified_value)} "
-                  f"({change:+,.1f})"
-                ),
-              })
-
-        st.subheader("Changed Inputs")
+      #  st.subheader("Changed Inputs")
+        st.subheader(f"Changed Inputs (Baseline: {country})")
 
         st.dataframe(
             pd.DataFrame(changed_inputs),
             hide_index=True,
             width="stretch",
         )
-        
-                # --------------------------------------------------------
-        # What Drove the Prediction Change?
-        # --------------------------------------------------------
+
+        # ---------------------------------------
+        # What drove the prediction change?
+        # ---------------------------------------
 
         st.subheader("What Drove the Prediction Change?")
 
         st.write(
             "Changing one input can also change the influence of other "
-            "features because the Random Forest model captures "
-            "interactions between predictors."
+            "features because the Random Forest model captures interactions "
+            "between predictors."
         )
 
-        # Compare SHAP contributions before and after the edits
-        scenario_comparison = pd.DataFrame({
-            "Feature": feature_labels,
-            "Original": original_shap_values,
-            "Modified": shap_values,
-        })
+        scenario_comparison = pd.DataFrame(
+            {
+                "Feature": feature_labels,
+                "Original": original_shap_values,
+                "Modified": shap_values,
+            }
+        )
 
         scenario_comparison["Effect"] = (
             scenario_comparison["Modified"]
             - scenario_comparison["Original"]
         )
 
-        # Identify features directly edited by the user
         edited_features = {
             FEATURE_LABELS[feature]
             for feature in PREDICTION_FEATURES
-            if input_values[feature] != original_input_values[feature]
+            if input_has_changed(feature)
         }
 
         scenario_comparison["Edited"] = (
-            scenario_comparison["Feature"]
-            .isin(edited_features)
+            scenario_comparison["Feature"].isin(
+                edited_features
+            )
         )
 
-        # -----------------------------------------
-        # Separate major and minor effects
-        # -----------------------------------------
-
+        # Separate major and minor effects.
         major_effects = (
             scenario_comparison[
                 scenario_comparison["Effect"].abs()
@@ -1240,20 +1374,18 @@ with prediction_tab:
         minor_effect_sum = minor_effects["Effect"].sum()
         minor_effect_count = len(minor_effects)
 
-        # -----------------------------------------
+        # ---------------------------------------
         # Direct effects
-        # -----------------------------------------
+        # ---------------------------------------
 
         direct_effects = major_effects[
             major_effects["Edited"]
         ]
 
         if not direct_effects.empty:
-
             st.markdown("##### Direct Effects")
 
             for _, row in direct_effects.iterrows():
-
                 arrow = "▲" if row["Effect"] > 0 else "▼"
 
                 st.write(
@@ -1261,36 +1393,38 @@ with prediction_tab:
                     f"({row['Effect']:+,.1f} deaths per million)"
                 )
 
-        # -----------------------------------------
-        # Model interactions
-        # -----------------------------------------
-
+        # ---------------------------------------
+        # Indirect model interactions
+        # ---------------------------------------
+        
         interaction_effects = major_effects[
-            ~major_effects["Edited"]
+          ~major_effects["Edited"]
         ]
-
+        
         if not interaction_effects.empty:
-
-            st.markdown("##### Model Interactions")
-
-            for _, row in interaction_effects.iterrows():
-
-                arrow = "▲" if row["Effect"] > 0 else "▼"
-
-                st.write(
-                    f"{arrow} **{row['Feature']}** "
-                    f"({row['Effect']:+,.1f} deaths per million)"
-                )
-
-        # -----------------------------------------
-        # Remaining interactions
-        # -----------------------------------------
+          st.markdown("##### Model Interactions")
+          
+          interaction_strings = []
+          
+          for _, row in interaction_effects.iterrows():
+            arrow = "▲" if row["Effect"] > 0 else "▼"
+            
+            interaction_strings.append(
+              f"{arrow} **{row['Feature']}** "
+              f"({row['Effect']:+,.1f})"
+            )
+            
+          st.markdown(", ".join(interaction_strings))
+    
+        # ---------------------------------------
+        # Remaining smaller interactions
+        # ---------------------------------------
 
         if (
             minor_effect_count > 0
-            and abs(minor_effect_sum) >= SHAP_SUMMARY_THRESHOLD
+            and abs(minor_effect_sum)
+            >= SHAP_SUMMARY_THRESHOLD
         ):
-
             st.markdown("##### Other Interactions")
 
             feature_word = (
@@ -1300,27 +1434,26 @@ with prediction_tab:
             )
 
             st.write(
-                f"The remaining {minor_effect_count} {feature_word} "
-                f"had a combined effect of "
+                f"The remaining {minor_effect_count} "
+                f"{feature_word} had a combined effect of "
                 f"**{minor_effect_sum:+,.1f} deaths per million**."
             )
 
-        # -----------------------------------------
+        # ---------------------------------------
         # Fallback
-        # -----------------------------------------
+        # ---------------------------------------
 
         if (
-            major_effects.empty
-            and abs(minor_effect_sum) < SHAP_SUMMARY_THRESHOLD
+            direct_effects.empty
+            and interaction_effects.empty
+            and abs(minor_effect_sum)
+            < SHAP_SUMMARY_THRESHOLD
         ):
-
             st.info(
                 "No individual feature had a substantial effect on "
                 "the change in prediction."
             )
-            
-            
-    # Display the baseline prediction when no inputs have changed
+
     else:
         result_col1, result_col2 = st.columns(2)
 
@@ -1332,82 +1465,114 @@ with prediction_tab:
         result_col2.metric(
             "Predicted Deaths per Million",
             f"{original_prediction:,.1f}",
-            delta=f"{original_prediction - actual_value:,.1f}",
+            delta=(
+                f"{original_prediction - actual_value:,.1f}"
+            ),
         )
-        
-        
-    st.divider()
+
+    # ---------------------------------------
+    # Prediction explanation
+    # ---------------------------------------
 
     st.subheader("Prediction Explanation")
-    
-    # Identify the largest factors driving the prediction
-    feature_effects = pd.DataFrame({
-      "Feature": feature_labels,
-      "Value": display_values,
-      "SHAP": shap_values,
-    })
-    
-    positive_effects = (
-      feature_effects[feature_effects["SHAP"] > 0]
-      .sort_values("SHAP", ascending=False)
-      .head(3)
-    )
-    
-    negative_effects = (
-      feature_effects[feature_effects["SHAP"] < 0]
-      .sort_values("SHAP")
-      .head(3)
+
+    feature_effects = pd.DataFrame(
+        {
+            "Feature": feature_labels,
+            "Value": display_values,
+            "SHAP": shap_values,
+        }
     )
 
-    #st.write(
-    #  "The prediction below is explained by the model's most influential "
-    #  "features for this specific scenario."
-    #)
+    positive_effects = (
+        feature_effects[
+            feature_effects["SHAP"] > 0
+        ]
+        .sort_values(
+            "SHAP",
+            ascending=False,
+        )
+        .head(3)
+    )
+
+    negative_effects = (
+        feature_effects[
+            feature_effects["SHAP"] < 0
+        ]
+        .sort_values("SHAP")
+        .head(3)
+    )
+
+    # ---------------------------------------
+    # Compact feature contribution summary
+    # ---------------------------------------
+
     st.write(
-      "The chart below explains how each feature influenced the predicted "
-      "COVID-19 mortality for the selected scenario. Features shown in red "
-      "increase the prediction, while blue features decrease it. Larger bars "
-      "indicate a greater influence on the final prediction."
-    )    
-    
-    col1, col2 = st.columns(2)
-    with col1:
-      st.markdown("#### Increased Prediction")
-      
-      for _, row in positive_effects.iterrows():
-        st.write(
-            f"• **{row['Feature']}** "
-            f"(+{row['SHAP']:.0f})"
+        "The chart below explains how each feature influenced the predicted "
+        "COVID-19 mortality. Positive values increase the prediction, while "
+        "negative values decrease it."
+    )
+
+    if positive_effects.empty:
+        st.markdown(
+            "**▲ Increased Prediction:** "
+            "No features increased the prediction."
         )
-    with col2:
-      st.markdown("#### Decreased Prediction")
-      for _, row in negative_effects.iterrows():
-        st.write(
-            f"• **{row['Feature']}** "
-            f"({row['SHAP']:.0f})"
+    else:
+        increased_items = [
+            f"**{row['Feature']}** (+{row['SHAP']:.0f})"
+            for _, row in positive_effects.iterrows()
+        ]
+
+        st.markdown(
+            "**▲ Increased Prediction:** "
+            + ", ".join(increased_items)
         )
-    
-    
-    #plt.figure(figsize=(10, 6))
-    plt.figure(figsize=(11, 6.5))
+
+    if negative_effects.empty:
+        st.markdown(
+            "**▼ Decreased Prediction:** "
+            "No features decreased the prediction."
+        )
+    else:
+        decreased_items = [
+            f"**{row['Feature']}** ({row['SHAP']:.0f})"
+            for _, row in negative_effects.iterrows()
+        ]
+
+        st.markdown(
+            "**▼ Decreased Prediction:** "
+            + ", ".join(decreased_items)
+        )
+        
+    # ---------------------------------------
+    # SHAP waterfall plot
+    # ---------------------------------------
+
+    plt.figure(figsize=(9, 4))
+
     shap.plots.waterfall(
         local_shap_display,
         max_display=12,
         show=False,
     )
-    
-    plt.title(
-      "Feature Contributions to the Prediction",
-      fontsize=15,
-      pad=12,
-    )
 
-    plt.tight_layout(pad=1.5)
+    plt.title(
+        "Feature Contributions to the Prediction",
+        fontsize=12,
+        pad=4,
+        loc="left",
+    )
+    
+    plt.subplots_adjust(left=0.18)
+    
+    plt.tight_layout(pad=0.5)
 
     st.pyplot(
         plt.gcf(),
         clear_figure=True,
     )
+
 
    
 # ---------------------------------------
