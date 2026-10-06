@@ -2,11 +2,14 @@
 
 > An interactive machine learning dashboard for predicting country-level COVID-19 mortality and explaining model predictions using SHAP.
 
+**Live demo:** [https://coviddecisionsupportsystem-bwdacuubwqgfphchtpbb8p.streamlit.app/](https://coviddecisionsupportsystem-bwdacuubwqgfphchtpbb8p.streamlit.app/)  
+*Hosted on Streamlit Community Cloud. If the app has gone to sleep, click the wake-up button; it restarts in about a minute.*
+
 ---
 
 ## Dashboard Preview
 
-*(Add overview screenshot here)*
+![Dashboard overview](screenshots/covid_dashboard.png)
 
 ---
 
@@ -67,7 +70,7 @@ Rather than functioning as a static predictive model, the application serves as 
 
 Explore demographic, healthcare, economic, and COVID-19 characteristics for each country.
 
-*(Add Country Explorer screenshot here)*
+![Country Explorer](screenshots/covid_country_explorer.png)
 
 ---
 
@@ -84,7 +87,7 @@ Features include:
 - SHAP explanation of prediction changes
 - Local SHAP waterfall visualization
 
-*(Add Prediction screenshot here)*
+![Prediction and scenario analysis](screenshots/covid_prediction.png)
 
 ---
 
@@ -100,7 +103,7 @@ Users can explore:
 - Direct feature effects
 - Model interactions
 
-*(Add SHAP waterfall screenshot here)*
+![SHAP waterfall explanation](screenshots/covid_waterfall.png)
 
 ---
 
@@ -110,7 +113,9 @@ Countries are grouped using K-Means clustering based on demographic, healthcare,
 
 The clustering analysis helps identify countries with similar profiles and compare mortality patterns across groups.
 
-*(Add Cluster screenshot here)*
+![Global map of country clusters](screenshots/covid_cluster_map.png)
+
+![COVID-19 mortality by cluster](screenshots/covid_cluster_box.png)
 
 ---
 
@@ -185,13 +190,13 @@ Interactive Streamlit Dashboard
 Clone the repository
 
 ```bash
-git clone https://github.com/darylm910/Capstone3.git
+git clone https://github.com/darylm910/COVID_Decision_Support_System.git
 ```
 
 Navigate to the project directory
 
 ```bash
-cd Capstone3
+cd COVID_Decision_Support_System
 ```
 
 Install dependencies
